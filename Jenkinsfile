@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    tools {
+        nodejs "Node22"
+        dockerTool 'Dockertool'
+    }
+
     stages {
         stage('Construir Imagen Docker') {
             steps {
