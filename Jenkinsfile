@@ -7,6 +7,18 @@ pipeline {
     }
 
     stages {
+        stage('Instalar dependencias') {
+            steps {
+                sh 'npm install'
+            }
+        }
+
+        stage('Ejecutar Tests') {
+            steps {
+                sh 'npm test'
+            }
+        }
+
         stage('Construir Imagen Docker') {
             steps {
                 sh 'docker build -t hola-mundo-node:latest .'

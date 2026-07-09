@@ -7,9 +7,6 @@ const usersFile = path.join(__dirname, '..', 'users.json');
 const testUser = { id: 'test123', name: 'Test User', email: 'test@example.com' };
 const originalUsersFile = fs.readFileSync(usersFile, 'utf8');
 
-const readUsers = () => JSON.parse(fs.readFileSync(usersFile, 'utf8'));
-const writeUsers = (users) => fs.writeFileSync(usersFile, JSON.stringify(users, null, 2), 'utf8');
-
 describe('API de usuarios', () => {
   beforeEach(() => {
     fs.writeFileSync(usersFile, originalUsersFile, 'utf8');
@@ -33,6 +30,22 @@ describe('API de usuarios', () => {
     expect(response.body.user).toMatchObject(testUser);
   });
 
+  it('Debe rechazar la creación si faltan campos obligatorios', async () => {
+    const response = await request(app).post('/users').send({ id: 'incompleto' });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.body.error).toMatch(/required/i);
+  });
+
+  it('Debe rechazar un usuario duplicado', async () => {
+    await request(app).post('/users').send(testUser);
+
+    const response = await request(app).post('/users').send(testUser);
+
+    expect(response.statusCode).toBe(400);
+    expect(response.body.error).toMatch(/same ID/i);
+  });
+
   it('Debe obtener todos los usuarios', async () => {
     await request(app).post('/users').send(testUser);
 
@@ -52,6 +65,13 @@ describe('API de usuarios', () => {
     expect(response.body.user).toMatchObject(testUser);
   });
 
+  it('Debe responder 404 al buscar un usuario inexistente', async () => {
+    const response = await request(app).get('/users/no-existe');
+
+    expect(response.statusCode).toBe(404);
+    expect(response.body.error).toMatch(/not found/i);
+  });
+
   it('Debe actualizar un usuario existente', async () => {
     await request(app).post('/users').send(testUser);
 
@@ -61,6 +81,13 @@ describe('API de usuarios', () => {
     expect(response.body.user.name).toBe('Updated User');
   });
 
+  it('Debe responder 404 al actualizar un usuario inexistente', async () => {
+    const response = await request(app).put('/users/no-existe').send({ name: 'Updated User' });
+
+    expect(response.statusCode).toBe(404);
+    expect(response.body.error).toMatch(/not found/i);
+  });
+
   it('Debe eliminar un usuario existente', async () => {
     await request(app).post('/users').send(testUser);
 
@@ -68,5 +95,12 @@ describe('API de usuarios', () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.body.message).toMatch(/deleted/i);
+  });
+
+  it('Debe responder 404 al eliminar un usuario inexistente', async () => {
+    const response = await request(app).delete('/users/no-existe');
+
+    expect(response.statusCode).toBe(404);
+    expect(response.body.error).toMatch(/not found/i);
   });
 });
